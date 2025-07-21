@@ -1,0 +1,52 @@
+.pio_version 0
+
+.program jig
+
+; use side-set pin for LED
+.side_set 1 opt
+
+.wrap_target
+    pull ; pull delay from fifo
+    set pins, 0b111 side 1 ; set pins high
+
+    ; first delay
+    out x, 32
+delay0:
+    jmp x--, delay0
+
+    pull ; pull next delay from fifo
+    set pins, 0 side 0 ; set pins low
+
+    ; second delay
+    out x, 32
+delay1:
+    jmp x--, delay1
+.wrap
+
+% c-sdk {
+
+void jig_program_init(PIO pio, uint sm, uint offset, uint pin_base, uint pin_count, uint led_pin) {
+    // init gpios
+    for (uint i = pin_base; i < pin_base + pin_count; i++) {
+        pio_gpio_init(pio, i);
+    }
+    pio_gpio_init(pio, led_pin);
+
+    // set gpios to output
+    uint pindir_mask = (1 << led_pin);
+    for (uint i = 0; i < pin_count; i++) {
+        pindir_mask |= 1 << (pin_base + i);
+    }
+    pio_sm_set_pindirs_with_mask(pio, sm, pindir_mask, pindir_mask);
+
+    // configure set and sideset pins
+    pio_sm_config c = jig_program_get_default_config(offset);
+    sm_config_set_set_pins(&c, pin_base, pin_count);
+    sm_config_set_sideset_pins(&c, led_pin);
+
+    // init and enable
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+%}
