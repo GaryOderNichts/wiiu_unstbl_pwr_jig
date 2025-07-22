@@ -26,7 +26,7 @@ int main() {
     // init program, will wait for fifo
     jig_program_init(pio, sm, offset, PIN_BASE, PIN_COUNT, PICO_DEFAULT_LED_PIN);
 
-    const float base = clock_get_hz(clk_sys) / (1.0f / CYCLE_DURATION);
+    const float base = (float)clock_get_hz(clk_sys) * CYCLE_DURATION;
 
     while (1) {
         // do this pattern twice
